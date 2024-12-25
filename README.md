@@ -1,6 +1,9 @@
 # strefakursow-downloader
 Prosty skrypt w pythonie do pobierania kursów z platformy strefakursow.pl
 
+# Przed pierwszym użyciem
+pip install requests
+
 # Użycie
 python strefa-kursow-downloader.py -c URL (format: https://platforma.strefakursow.pl/platforma/kurs/ID_KURSU) -t token (format: 0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a)
 
