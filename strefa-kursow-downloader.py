@@ -4,9 +4,11 @@ from urllib.parse import urlparse
 import argparse
 import re
 import json
+from datetime import datetime
 
 # Base URLs
 API_BASE = "https://api.strefakursow.pl/api/v2/web"
+LOGIN_URL = "https://api.strefakursow.pl/api/v2/sso/login"
 PLATFORM_REFERER = "https://platforma.strefakursow.pl"
 
 # Headers template
@@ -60,7 +62,46 @@ def download_file(url, output_path, referer):
             f.write(chunk)
     print(f"Downloaded: {output_path}")
 
-def main(course_url, token, output_dir="downloads", debug_file=None):
+def fetch_token():
+    """Prompt for username/password and fetch the token."""
+    username = input("Enter your email: ").strip()
+    password = input("Enter your password: ").strip()
+    
+    payload = {
+        "username": username,
+        "password": password
+    }
+    
+    response = requests.post(LOGIN_URL, json=payload)
+    response.raise_for_status()
+    token_data = response.json()
+    return token_data
+
+def load_or_fetch_token():
+    """Load the token from file or fetch it if necessary."""
+    token_file = "token.json"
+    if os.path.exists(token_file):
+        with open(token_file, "r", encoding="utf-8") as f:
+            token_data = json.load(f)
+        
+        valid_until = datetime.fromisoformat(token_data["validUntil"])
+        if datetime.now() < valid_until:
+            print("Using saved token.")
+            return token_data["value"]
+        else:
+            print("Saved token has expired.")
+    
+    # Fetch a new token if no valid token is found
+    token_data = fetch_token()
+    with open(token_file, "w", encoding="utf-8") as f:
+        json.dump(token_data, f, ensure_ascii=False, indent=4)
+    return token_data["value"]
+
+def main(course_url, token=None, output_dir="downloads", debug_file=None):
+    # Load or fetch token
+    if not token:
+        token = load_or_fetch_token()
+    
     # Extract course ID from URL
     course_id = course_url.rstrip("/").split("/")[-1]
     
@@ -108,7 +149,7 @@ def main(course_url, token, output_dir="downloads", debug_file=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Downloader for Strefa Kursów.")
     parser.add_argument("-c", "--courseurl", required=True, help="Course URL")
-    parser.add_argument("-t", "--token", required=True, help="Platform token")
+    parser.add_argument("-t", "--token", help="Platform token (optional)")
     parser.add_argument("-o", "--outputdir", default="downloads", help="Output directory for downloads")
     parser.add_argument("--save-json", action="store_true", help="Save JSON responses to debug log")
     
