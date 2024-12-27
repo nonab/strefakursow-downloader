@@ -2,7 +2,7 @@
 Prosty skrypt w pythonie do pobierania kursów z platformy strefakursow.pl
 
 # Przed pierwszym użyciem
-pip install requests pytz
+pip install requests
 
 # Pobieranie kursów bez podania adresu url
 python strefa-kursow-downloader.py
