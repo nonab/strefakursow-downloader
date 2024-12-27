@@ -54,7 +54,6 @@ def retrieve_token():
             token = token_data["value"]
             valid_until = token_data["validUntil"]
             if not is_token_expired(token):
-                print("not expired")
                 return token
             else:
                 print("Token expired. Re-authenticating...")
@@ -124,6 +123,24 @@ def download_file(url, output_path, referer):
     else:
         print(f"Error: Failed to download {url}. Status code: {response.status_code}")
 
+# Function to download course materials
+def download_material(course_id, token, output_dir):
+    material_url = f"{API_BASE_URL}/web/course/{course_id}/material"
+    headers = {"x-platforma-token": token}
+    response = requests.get(material_url, headers=headers)
+
+    if response.status_code == 200:
+        material_data = response.json()
+        material_file_url = material_data.get("url")
+
+        if material_file_url:
+            file_name = os.path.basename(urlparse(material_file_url).path)
+            output_path = os.path.join(output_dir, file_name)
+            download_file(material_file_url, output_path, PLATFORM_REFERER)
+        else:
+            print("No materials available for this course.")
+    else:
+        print(f"Error fetching materials for course {course_id}. {response.status_code} - {response.text}")
 # Main function
 def main():
     parser = argparse.ArgumentParser(description="Strefa Kursow Downloader")
@@ -131,6 +148,7 @@ def main():
     parser.add_argument("-c", "--courseurl", help="Course URL")
     parser.add_argument("-o", "--outputdir", default="downloads", help="Directory to save downloaded videos")
     parser.add_argument("--save-json", action="store_true", help="Save JSON responses to a debug log")
+    parser.add_argument("--save-materials", action="store_true", help="Download course materials if available")
 
     args = parser.parse_args()
 
@@ -161,11 +179,14 @@ def main():
         course_details = get_course_details(course_id, token)
         course_name = sanitize_filename(course_details.get("name", "Unknown_Course")).replace(" ", "_")
         chapters = course_details.get("chapters", [])
+        course_output_dir = os.path.join(args.outputdir, course_name)
 
         print(f"\nCourse: {course_name}")
         print(f"Found {len(chapters)} chapters.")
-
-        # Step 5: Iterate through chapters and resources
+        # Step 5: Download course materials if requested
+        if args.save_materials:
+            download_material(course_id, token, course_output_dir)
+        # Step 6: Iterate through chapters and resources
         for chapter_index, chapter in enumerate(chapters, start=1):
             chapter_title = sanitize_filename(chapter.get("title", "Unknown_Chapter")).replace(" ", "_")
             chapter_name = f"{chapter_index:02d}_{chapter_title}"
@@ -191,7 +212,7 @@ def main():
                     parsed_url = urlparse(video_url)
                     file_name = os.path.basename(parsed_url.path)
                     reversed_file_name = f"{chapter_name}_{resource_index:02d}_{resource_name}{os.path.splitext(file_name)[1]}"
-                    output_path = os.path.join(args.outputdir, course_name, reversed_file_name)
+                    output_path = os.path.join(course_output_dir, reversed_file_name)
 
                     # Download the video
                     download_file(video_url, output_path, PLATFORM_REFERER)
