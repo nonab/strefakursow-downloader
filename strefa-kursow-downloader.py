@@ -191,7 +191,7 @@ def main():
                     parsed_url = urlparse(video_url)
                     file_name = os.path.basename(parsed_url.path)
                     reversed_file_name = f"{chapter_name}_{resource_index:02d}_{resource_name}{os.path.splitext(file_name)[1]}"
-                    output_path = os.path.join(args.outputdir, course_name, chapter_name, reversed_file_name)
+                    output_path = os.path.join(args.outputdir, course_name, reversed_file_name)
 
                     # Download the video
                     download_file(video_url, output_path, PLATFORM_REFERER)
