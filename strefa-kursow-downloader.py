@@ -2,7 +2,6 @@ import json
 import os
 import requests
 from datetime import datetime
-import pytz
 import sys
 import argparse
 from urllib.parse import urlparse
@@ -13,15 +12,16 @@ PLATFORM_REFERER = "https://platforma.strefakursow.pl"
 TOKEN_FILE = "token.json"
 
 # Function to check if the token is expired
-def is_token_expired(valid_until_str):
-    # Convert the validUntil string to a timezone-aware datetime object
-    valid_until = datetime.fromisoformat(valid_until_str.replace("Z", "+00:00")).astimezone(pytz.utc)
-    
-    # Get the current time as a timezone-aware datetime object
-    current_time = datetime.now(pytz.utc)
-    
-    # Compare the current time with the validUntil time
-    return valid_until < current_time
+def is_token_expired(token):
+    user_url = f"{API_BASE_URL}/web/user/me"
+    headers = {"x-platforma-token": token}
+
+    # Make the request to get the signed URL
+    response = requests.get(user_url, headers=headers)
+    if response.status_code == 200:
+        return False
+    else:
+        return True
 
 # Function to retrieve the token (or ask for credentials)
 def get_token(username=None, password=None):
@@ -53,7 +53,8 @@ def retrieve_token():
             token_data = json.load(token_file)
             token = token_data["value"]
             valid_until = token_data["validUntil"]
-            if not is_token_expired(valid_until):
+            if not is_token_expired(token):
+                print("not expired")
                 return token
             else:
                 print("Token expired. Re-authenticating...")
