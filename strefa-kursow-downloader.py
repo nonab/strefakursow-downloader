@@ -149,6 +149,7 @@ def main():
     parser.add_argument("-o", "--outputdir", default="downloads", help="Directory to save downloaded videos")
     parser.add_argument("--save-json", action="store_true", help="Save JSON responses to a debug log")
     parser.add_argument("--save-materials", action="store_true", help="Download course materials if available")
+    parser.add_argument("--save-subtitles", action="store_true", help="Download course materials if available")
 
     args = parser.parse_args()
 
@@ -218,6 +219,17 @@ def main():
                     download_file(video_url, output_path, PLATFORM_REFERER)
                 else:
                     print(f"Resource {resource_name} has no video URL.")
+                # Download subtitles if requested
+                if args.save_subtitles:
+                    for lang_key, subtitle_url in signed_url_data.items():
+                        if lang_key.startswith("subtitle") and subtitle_url:
+                            lang_suffix = ""
+                            if lang_key != "subtitleUrl":  # Default subtitle has no suffix
+                                lang_suffix = f"-{lang_key.replace('subtitle', '').replace('Url', '').upper()}"
+                            subtitle_file_name = f"{chapter_name}_{resource_index:02d}_{resource_name}{lang_suffix}.vtt"
+                            subtitle_output_path = os.path.join(course_output_dir, subtitle_file_name)
+                            download_file(subtitle_url, subtitle_output_path, PLATFORM_REFERER)
+
 
 # Start the program
 if __name__ == "__main__":
