@@ -28,4 +28,6 @@ Token znajduje się w headerze "x-platforma-token"
 
 --save-materials (zapisuje materiały dołączone do kursu np. zip, pdf)
 
+--save-subtitles (zapisuje napisy w formacie vtt dla wszystkich języków)
+
 -o nazwafolderu (nazwa folderu, w którym mają być zapisane pobierane kursy. Domyślnie 'downloads')
