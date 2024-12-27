@@ -26,4 +26,6 @@ Token znajduje się w headerze "x-platforma-token"
 # Dodatkowe opcje
 --save-json (zapisuje w pliku txt wszystkie odpowiedzi z api w formacie JSON)
 
+--save-materials (zapisuje materiały dołączone do kursu np. zip, pdf)
+
 -o nazwafolderu (nazwa folderu, w którym mają być zapisane pobierane kursy. Domyślnie 'downloads')
