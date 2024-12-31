@@ -5,7 +5,7 @@ from datetime import datetime
 import sys
 import argparse
 from urllib.parse import urlparse
-
+import getpass
 # Define some constants for headers and URLs
 API_BASE_URL = "https://api.strefakursow.pl/api/v2"
 PLATFORM_REFERER = "https://platforma.strefakursow.pl"
@@ -27,7 +27,7 @@ def is_token_expired(token):
 def get_token(username=None, password=None):
     if username is None or password is None:
         username = input("Enter your username (email): ")
-        password = input("Enter your password: ")
+        password = getpass.getpass("Enter your password: ")
 
     login_url = f"{API_BASE_URL}/sso/login"
     response = requests.post(login_url, json={"username": username, "password": password})
@@ -149,7 +149,7 @@ def main():
     parser.add_argument("-o", "--outputdir", default="downloads", help="Directory to save downloaded videos")
     parser.add_argument("--save-json", action="store_true", help="Save JSON responses to a debug log")
     parser.add_argument("--save-materials", action="store_true", help="Download course materials if available")
-    parser.add_argument("--save-subtitles", action="store_true", help="Download course materials if available")
+    parser.add_argument("--save-subtitles", action="store_true", help="Download subtitles if available")
 
     args = parser.parse_args()
 
@@ -164,12 +164,17 @@ def main():
         for i, course in enumerate(courses, start=1):  # Start numbering from 1
             print(f"{i}: {course['name']} (ID: {course['id']})")
 
-        course_choice = int(input("Enter the number of the course to download (0 for all): "))
-        if course_choice == 0:
+        course_choices = input("Enter the numbers of the courses to download (0 for all, separate by commas): ")
+        course_choices = [choice.strip() for choice in course_choices.split(",")]
+
+        if "0" in course_choices:
             course_ids = [course['id'] for course in courses]
         else:
-            course_ids = [courses[course_choice - 1]['id']]  # Correcting index to 0-based
-
+            try:
+                course_ids = [courses[int(choice) - 1]['id'] for choice in course_choices if choice.isdigit()]
+            except (IndexError, ValueError):
+                print("Invalid selection. Please check your input.")
+                sys.exit(1)
     else:
         # Step 3: Retrieve course ID from URL
         course_id = int(args.courseurl.split("/")[-1])
@@ -184,9 +189,11 @@ def main():
 
         print(f"\nCourse: {course_name}")
         print(f"Found {len(chapters)} chapters.")
+        
         # Step 5: Download course materials if requested
         if args.save_materials:
             download_material(course_id, token, course_output_dir)
+        
         # Step 6: Iterate through chapters and resources
         for chapter_index, chapter in enumerate(chapters, start=1):
             chapter_title = sanitize_filename(chapter.get("title", "Unknown_Chapter")).replace(" ", "_")
@@ -219,6 +226,7 @@ def main():
                     download_file(video_url, output_path, PLATFORM_REFERER)
                 else:
                     print(f"Resource {resource_name} has no video URL.")
+                
                 # Download subtitles if requested
                 if args.save_subtitles:
                     for lang_key, subtitle_url in signed_url_data.items():
