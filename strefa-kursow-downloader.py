@@ -43,7 +43,7 @@ def get_token(username=None, password=None):
 
         return token
     else:
-        print(f"Error: Unable to retrieve token. {response.status_code} - {response.text}")
+        print(f"Błąd: Nie udało się pobrać tokena. {response.status_code} - {response.text}")
         sys.exit(1)
 
 # Function to get the token from the file or prompt user
@@ -56,7 +56,7 @@ def retrieve_token():
             if not is_token_expired(token):
                 return token
             else:
-                print("Token expired. Re-authenticating...")
+                print("Token stracił ważność. Loguję ponownie by pobrać aktualny...")
     return get_token()
 
 # Function to get the list of courses
@@ -67,7 +67,7 @@ def get_courses(token):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error: Unable to fetch courses. {response.status_code} - {response.text}")
+        print(f"Błąd: Nie udało się pobrać listy kursów. {response.status_code} - {response.text}")
         sys.exit(1)
 
 # Function to get course details
@@ -78,7 +78,7 @@ def get_course_details(course_id, token):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error: Unable to fetch course details. {response.status_code} - {response.text}")
+        print(f"Błąd: Nie udało się pobrać zawartości kursu. {response.status_code} - {response.text}")
         sys.exit(1)
 
 def get_signed_url(resource_id, token, debug_file=None):
@@ -103,7 +103,7 @@ def get_signed_url(resource_id, token, debug_file=None):
 
         return signed_url_data
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching signed URL for resource {resource_id}: {e}")
+        print(f"Błąd pobierania linków do filmów dla lekcji {resource_id}: {e}")
         return {}
 
 # Function to sanitize filenames
@@ -112,7 +112,7 @@ def sanitize_filename(name):
 
 # Function to download a file
 def download_file(url, output_path, referer):
-    print(f"Downloading {output_path}")
+    print(f"Pobieram {output_path}")
     response = requests.get(url, headers={"Referer": referer}, stream=True)
     if response.status_code == 200:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -121,7 +121,7 @@ def download_file(url, output_path, referer):
                 if chunk:
                     file.write(chunk)
     else:
-        print(f"Error: Failed to download {url}. Status code: {response.status_code}")
+        print(f"Błąd: Nie udało się pobrać {url}. Kod odpowiedzi: {response.status_code}")
 
 # Function to download course materials
 def download_material(course_id, token, output_dir):
@@ -138,9 +138,9 @@ def download_material(course_id, token, output_dir):
             output_path = os.path.join(output_dir, file_name)
             download_file(material_file_url, output_path, PLATFORM_REFERER)
         else:
-            print("No materials available for this course.")
+            print("Brak materiałów dla kursu.")
     else:
-        print(f"Error fetching materials for course {course_id}. {response.status_code} - {response.text}")
+        print(f"Błąd pobierania lekcji dla kursu {course_id}. {response.status_code} - {response.text}")
 # Main function
 def main():
     parser = argparse.ArgumentParser(description="Strefa Kursow Downloader")
@@ -159,12 +159,12 @@ def main():
     # Step 2: If no course URL is provided, fetch all available courses
     if not args.courseurl:
         courses = get_courses(token)
-        print("Available courses:")
-        print("0: Download all courses")
+        print("Dostępne kursy:")
+        print("0: Pobierz wszystkie")
         for i, course in enumerate(courses, start=1):  # Start numbering from 1
             print(f"{i}: {course['name']} (ID: {course['id']})")
 
-        course_choices = input("Enter the numbers of the courses to download (0 for all, separate by commas): ")
+        course_choices = input("Wpisz numery kursów do pobrania (możesz pobrać kilka oddzielając numery przecinkami np. 1,3,4): ")
         course_choices = [choice.strip() for choice in course_choices.split(",")]
 
         if "0" in course_choices:
@@ -173,7 +173,7 @@ def main():
             try:
                 course_ids = [courses[int(choice) - 1]['id'] for choice in course_choices if choice.isdigit()]
             except (IndexError, ValueError):
-                print("Invalid selection. Please check your input.")
+                print("Wybrałeś zły numer.")
                 sys.exit(1)
     else:
         # Step 3: Retrieve course ID from URL
@@ -187,8 +187,8 @@ def main():
         chapters = course_details.get("chapters", [])
         course_output_dir = os.path.join(args.outputdir, course_name)
 
-        print(f"\nCourse: {course_name}")
-        print(f"Found {len(chapters)} chapters.")
+        print(f"\Kurs: {course_name}")
+        print(f"Znaleziono {len(chapters)} rozdziałów.")
         
         # Step 5: Download course materials if requested
         if args.save_materials:
@@ -199,7 +199,7 @@ def main():
             chapter_title = sanitize_filename(chapter.get("title", "Unknown_Chapter")).replace(" ", "_")
             chapter_name = f"{chapter_index:02d}_{chapter_title}"
             resources = chapter.get("resources", [])
-            print(f"Chapter: {chapter_name} ({len(resources)} resources)")
+            print(f"Ilość lekcji rozdziału: {chapter_name} ({len(resources)})")
 
             for resource_index, resource in enumerate(resources, start=1):
                 resource_name = sanitize_filename(resource.get("name", "Unknown_Resource")).replace(" ", "_")
@@ -208,7 +208,7 @@ def main():
 
                 # Skip non-video resources
                 if resource_type != "video":
-                    print(f"Skipping non-video resource: {resource_name} (type: {resource_type})")
+                    print(f"Pomijam element nie zawierający video: {resource_name} (type: {resource_type})")
                     continue
 
                 # Get signed URL
@@ -225,7 +225,7 @@ def main():
                     # Download the video
                     download_file(video_url, output_path, PLATFORM_REFERER)
                 else:
-                    print(f"Resource {resource_name} has no video URL.")
+                    print(f"Lekcja {resource_name} nie ma video.")
                 
                 # Download subtitles if requested
                 if args.save_subtitles:
