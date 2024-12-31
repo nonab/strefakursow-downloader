@@ -9,7 +9,7 @@ python strefa-kursow-downloader.py
 
 Skrypt zaloguje się lub użyje tokena z katalogu i pobierze listę wszystkich kursów.
 
-Nastepnie pozwoli wybrać który kurs pobrać (0 dla wszystkich, 1, 2, etc. dla pozostałych)
+Nastepnie pozwoli wybrać który kurs lub kursy pobrać (0 dla wszystkich, 1, 2, etc. dla pozostałych. Można podać więcej niż jeden numer oddzielając przecinkami)
 
 # Pobieranie konkretnego kursu
 python strefa-kursow-downloader.py -c URL (format: https://platforma.strefakursow.pl/platforma/kurs/ID_KURSU) 
